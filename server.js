@@ -7,10 +7,8 @@ const axios = require("axios");
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.get("/", (req, res) => {
-res.send("Server works 🚀");
-});
-app.post("/ask", async (req, res) => {
+app.use(express.static("."));
+app.post("/chat", async (req, res) => {
 try {
 const userMessage = req.body.message;
 
