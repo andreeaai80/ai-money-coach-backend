@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>AI Money Coach</title>
+<title>AI Money Coach</title>
 </head>
-<body>
 
-<h1>AI Money Coach 💸</h1>
+<body>
+<h1>AI Money Coach 💰</h1>
 
 <input id="input" placeholder="Ask about money..." />
 <button onclick="send()">Send</button>
@@ -14,21 +14,28 @@
 
 <script>
 async function send() {
-  const input = document.getElementById("input").value;
+try {
+const input = document.getElementById("input").value;
 
-  const res = await fetch("/chat", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ message: input })
-  });
+const res = await fetch("/chat", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({ message: input })
+});
 
-  const data = await res.json();
+const data = await res.json();
 
-  document.getElementById("response").innerText = data.reply;
+document.getElementById("response").innerText =
+data.reply || "No response from server";
+
+} catch (error) {
+console.log(error);
+document.getElementById("response").innerText =
+"Error connecting to server 😢";
+}
 }
 </script>
-
 </body>
 </html>
