@@ -15,7 +15,7 @@
 async function send() {
 const input = document.getElementById("input").value;
 
-const res = await fetch("https://abundant-celebration-production.up.railway.app/chat", {
+const res = await fetch("/chat", {
 method: "POST",
 headers: {
 "Content-Type": "application/json"
