@@ -11,7 +11,7 @@ app.use(express.static("."));
 
 // test
 app.get("/", (req, res) => {
-res.send("Server works!");
+res.sendFile(__dirname + "/index.html");
 });
 
 // chat endpoint
