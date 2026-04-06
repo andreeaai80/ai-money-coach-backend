@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Money Coach</title>
+</head>
+<body>
+<h1>AI Money Coach 💸</h1>
+
+<input id="input" placeholder="Ask about money..." />
+<button onclick="send()">Send</button>
+
+<p id="response"></p>
+
+<script>
+async function send() {
+const input = document.getElementById("input").value;
+
+const res = await fetch("https://abundant-celebration-production.up.railway.app/chat", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({ message: input })
+});
+
+const data = await res.json();
+document.getElementById("response").innerText =
+data.choices[0].message.content;
+}
+</script>
+</body>
+</html>
