@@ -3,23 +3,25 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
+const path = require("path");
 
 const app = express();
 
-// middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static("."));
 
-// 🔥 SERVE INDEX.HTML (FOARTE IMPORTANT)
+// 🔥 IMPORTANT - servește fișierele
+app.use(express.static(path.join(__dirname)));
+
+// 🔥 ROOT - trimite index.html
 app.get("/", (req, res) => {
-res.sendFile(__dirname + "/index.html");
+res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// 🔥 CHAT ENDPOINT
+// 🔥 CHAT endpoint
 app.post("/chat", async (req, res) => {
 try {
-const userMessage = req.body.message || "Hello";
+const userMessage = req.body.message;
 
 const response = await fetch("https://api.openai.com/v1/chat/completions", {
 method: "POST",
@@ -37,18 +39,17 @@ messages: [
 
 const data = await response.json();
 
-// 🔥 SAFE RESPONSE (NU MAI CRAPĂ)
-const reply = data?.choices?.[0]?.message?.content || "No response";
-
-res.json({ reply });
+res.json({
+reply: data.choices[0].message.content
+});
 
 } catch (error) {
-console.log("ERROR:", error);
-res.json({ reply: "Server error 😢" });
+console.error(error);
+res.status(500).json({ error: "Eroare server" });
 }
 });
 
-// 🔥 PORT PENTRU RAILWAY
+// 🔥 PORT pentru Railway
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
