@@ -15,7 +15,7 @@ app.get("/health", (req, res) => {
   res.status(200).send("ok");
 });
 
-// root => index.html
+// root -> index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
@@ -23,6 +23,7 @@ app.get("/", (req, res) => {
 // static files
 app.use(express.static(__dirname));
 
+// chat endpoint
 app.post("/chat", async (req, res) => {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -46,18 +47,14 @@ app.post("/chat", async (req, res) => {
     );
 
     res.json({ reply: response.data.output_text });
-
   } catch (error) {
     console.error("EROARE:", error.response?.data || error.message);
     res.status(500).json({ error: "Eroare server" });
   }
 });
 
+// IMPORTANT pentru Railway: ascultă pe portul din env
 const PORT = process.env.PORT;
-if (!PORT) {
-  console.error("PORT is missing. Railway must provide process.env.PORT");
-  process.exit(1);
-}
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port " + PORT);
