@@ -1,41 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>AI Money Coach</title>
+  <meta charset="utf-8" />
+  <title>AI Money Coach</title>
 </head>
 
 <body>
-<h1>AI Money Coach 💰</h1>
+  <h1>AI Money Coach 💰</h1>
 
-<input id="input" placeholder="Ask about money..." />
-<button onclick="send()">Send</button>
+  <input id="input" placeholder="Ask about money..." />
+  <button id="sendBtn">Send</button>
 
-<p id="response"></p>
+  <p id="response"></p>
 
-<script>
-async function send() {
-try {
-const input = document.getElementById("input").value;
+  <script>
+    async function send() {
+      const inputEl = document.getElementById("input");
+      const responseEl = document.getElementById("response");
 
-const res = await fetch("/chat", {
-method: "POST",
-headers: {
-"Content-Type": "application/json"
-},
-body: JSON.stringify({ message: input })
-});
+      const message = (inputEl.value || "").trim();
+      if (!message) {
+        responseEl.innerText = "Please type a question 🙂";
+        return;
+      }
 
-const data = await res.json();
+      responseEl.innerText = "Thinking...";
 
-document.getElementById("response").innerText =
-data.reply || "No response from server";
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message })
+        });
 
-} catch (error) {
-console.log(error);
-document.getElementById("response").innerText =
-"Error connecting to server 😢";
-}
-}
-</script>
+        // Luăm răspunsul ca text întâi (mai robust decât res.json())
+        const rawText = await res.text();
+
+        // Încercăm să-l parsez ca JSON, dacă se poate
+        let data = {};
+        try {
+          data = JSON.parse(rawText);
+        } catch (e) {
+          // dacă nu e JSON, rămâne text
+        }
+
+        // Dacă status nu e OK, afișăm eroarea reală
+        if (!res.ok) {
+          const errMsg =
+            (data && data.error) ||
+            rawText ||
+            "Unknown server error";
+          responseEl.innerText = `Server error (${res.status}): ${errMsg}`;
+          return;
+        }
+
+        // Încercăm să extragem răspunsul din mai multe formate posibile
+        const reply =
+          (data && data.reply) ||
+          (data && data.output_text) ||
+          (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ||
+          rawText;
+
+        responseEl.innerText = reply || "No response from server";
+      } catch (error) {
+        console.log(error);
+        responseEl.innerText = "Network error: " + (error.message || "Unknown error");
+      }
+    }
+
+    // click pe buton
+    document.getElementById("sendBtn").addEventListener("click", send);
+
+    // Enter în input
+    document.getElementById("input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") send();
+    });
+  </script>
 </body>
 </html>
+``
