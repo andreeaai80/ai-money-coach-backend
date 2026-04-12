@@ -10,7 +10,7 @@ const app = express();
 
 /**
  * ==========
- * BOOT LOGS + CRASH LOGS (ca să vedem de ce moare în Railway)
+ * BOOT LOGS + CRASH LOGS (ca să vedem clar în Railway)
  * ==========
  */
 console.log("✅ Booting app...");
@@ -32,11 +32,11 @@ process.on("unhandledRejection", (reason) => {
  * ==========
  */
 app.use(cors());
-app.use(express.json({ limit: "1mb" })); // safe default
+app.use(express.json({ limit: "1mb" }));
 
 /**
  * ==========
- * HEALTHCHECK (pentru Railway / debug rapid)
+ * HEALTHCHECK
  * ==========
  */
 app.get("/health", (req, res) => {
@@ -45,10 +45,8 @@ app.get("/health", (req, res) => {
 
 /**
  * ==========
- * STATIC + ROOT PAGE
+ * STATIC + ROOT
  * ==========
- * - servește fișiere statice din același folder (ex: index.html, css, js)
- * - root "/" trimite index.html explicit (cel mai sigur)
  */
 app.use(express.static(__dirname));
 
@@ -73,14 +71,12 @@ app.post("/chat", async (req, res) => {
       return res.status(500).json({ error: "OPENAI_API_KEY missing in Railway Variables" });
     }
 
-    // OpenAI Responses API
-    const response = await axios.post(
+    // Call OpenAI Responses API
+    const oa = await axios.post(
       "https://api.openai.com/v1/responses",
       {
         model: "gpt-4.1-mini",
         input: userMessage
-        // Dacă vrei "instrucțiuni" pt AI, putem adăuga aici system prompt în 'instructions'
-        // instructions: "You are a helpful personal finance coach..."
       },
       {
         headers: {
@@ -91,13 +87,43 @@ app.post("/chat", async (req, res) => {
       }
     );
 
-    // Responses API are output_text
-    const reply = response?.data?.output_text ?? "";
+    const d = oa.data;
+
+    // ✅ Extract reply robustly (works even when output_text is empty)
+    let reply =
+      d.output_text ||
+      (Array.isArray(d.output)
+        ? d.output
+            .flatMap((o) => (o && o.content ? o.content : []))
+            .map((c) => c.text || c.transcript || "")
+            .filter(Boolean)
+            .join("\n")
+        : "");
+
+    reply = (reply || "").trim();
+
+    // If still empty, log a preview for debugging (safe)
+    if (!reply) {
+      console.log("⚠️ OpenAI reply empty. Available keys:", Object.keys(d || {}));
+      console.log(
+        "⚠️ OpenAI output preview:",
+        JSON.stringify(d?.output || [], null, 2).slice(0, 2000)
+      );
+      reply = "(Empty reply from model)";
+    }
 
     return res.json({ reply });
   } catch (error) {
     console.error("🔥 /chat error:", error?.response?.data || error.message);
-    return res.status(500).json({ error: "Server error" });
+
+    // Return a useful error message to the frontend
+    const msg =
+      error?.response?.data?.error?.message ||
+      error?.response?.data?.message ||
+      error.message ||
+      "Server error";
+
+    return res.status(500).json({ error: msg });
   }
 });
 
@@ -110,4 +136,5 @@ const PORT = Number(process.env.PORT) || 8080;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("✅ Server running on port " + PORT);
-}); 
+});
+``
