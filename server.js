@@ -7,19 +7,22 @@ const path = require("path");
 
 const app = express();
 
-// middleware
 app.use(cors());
 app.use(express.json());
 
-// serve static
-app.use(express.static(__dirname));
+// healthcheck
+app.get("/health", (req, res) => {
+  res.status(200).send("ok");
+});
 
-// root
+// root => index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// chat endpoint
+// static files
+app.use(express.static(__dirname));
+
 app.post("/chat", async (req, res) => {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -42,9 +45,7 @@ app.post("/chat", async (req, res) => {
       }
     );
 
-    res.json({
-      reply: response.data.output_text
-    });
+    res.json({ reply: response.data.output_text });
 
   } catch (error) {
     console.error("EROARE:", error.response?.data || error.message);
@@ -52,9 +53,12 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-// PORT Railway
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
+const PORT = process.env.PORT;
+if (!PORT) {
+  console.error("PORT is missing. Railway must provide process.env.PORT");
+  process.exit(1);
+}
+
+app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port " + PORT);
 });
-``
