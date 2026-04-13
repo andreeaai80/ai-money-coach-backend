@@ -14,6 +14,21 @@
   <p id="response"></p>
 
   <script>
+    // ✅ 1) UserId persistent (în browser). Pentru “între dispozitive” real, vei lega mai târziu de login.
+    function getUserId() {
+      let id = localStorage.getItem("user_id");
+      if (!id) {
+        if (window.crypto && crypto.randomUUID) {
+          id = crypto.randomUUID();
+        } else {
+          // fallback simplu dacă randomUUID nu există
+          id = "user_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+        }
+        localStorage.setItem("user_id", id);
+      }
+      return id;
+    }
+
     async function send() {
       const inputEl = document.getElementById("input");
       const responseEl = document.getElementById("response");
@@ -30,13 +45,12 @@
         const res = await fetch("/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message })
+          // ✅ 2) trimitem și userId către server ca să salveze conversația pe user
+          body: JSON.stringify({ message, userId: getUserId() })
         });
 
-        // Luăm răspunsul ca text întâi (mai robust decât res.json())
         const rawText = await res.text();
 
-        // Încercăm să-l parsez ca JSON, dacă se poate
         let data = {};
         try {
           data = JSON.parse(rawText);
@@ -44,34 +58,27 @@
           // dacă nu e JSON, rămâne text
         }
 
-        // Dacă status nu e OK, afișăm eroarea reală
         if (!res.ok) {
-          const errMsg =
-            (data && data.error) ||
-            rawText ||
-            "Unknown server error";
+          const errMsg = (data && data.error) || rawText || "Unknown server error";
           responseEl.innerText = `Server error (${res.status}): ${errMsg}`;
           return;
         }
 
-        // Încercăm să extragem răspunsul din mai multe formate posibile
         const reply =
           (data && data.reply) ||
           (data && data.output_text) ||
           (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ||
           rawText;
 
-        responseEl.innerText = reply || "No response from server";
+        responseEl.innerText = (reply || "").trim() || "No response from server";
       } catch (error) {
         console.log(error);
         responseEl.innerText = "Network error: " + (error.message || "Unknown error");
       }
     }
 
-    // click pe buton
     document.getElementById("sendBtn").addEventListener("click", send);
 
-    // Enter în input
     document.getElementById("input").addEventListener("keydown", (e) => {
       if (e.key === "Enter") send();
     });
