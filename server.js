@@ -1,4 +1,51 @@
-// force redeploy for firebase env work.");
+// redeploy
+require("dotenv").config();
+
+const express = require("express");
+const cors = require("cors");
+const axios = require("axios");
+const path = require("path");
+const admin = require("firebase-admin");
+
+const app = express();
+
+/**
+ * ==========
+ * BOOT LOGS + CRASH LOGS
+ * ==========
+ */
+console.log("✅ Booting app...");
+console.log("✅ Node version:", process.version);
+console.log("✅ OPENAI_API_KEY present:", !!process.env.OPENAI_API_KEY);
+console.log("✅ FIREBASE_SERVICE_ACCOUNT present:", !!process.env.FIREBASE_SERVICE_ACCOUNT);
+console.log("✅ PORT env:", process.env.PORT);
+
+process.on("uncaughtException", (err) => {
+  console.error("🔥 uncaughtException:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("🔥 unhandledRejection:", reason);
+});
+
+/**
+ * ==========
+ * MIDDLEWARE
+ * ==========
+ */
+app.use(cors());
+app.use(express.json({ limit: "1mb" }));
+
+/**
+ * ==========
+ * FIREBASE INIT
+ * ==========
+ */
+let db = null;
+
+function initFirebase() {
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    console.warn("⚠️ FIREBASE_SERVICE_ACCOUNT missing. Firebase memory will NOT work.");
     return;
   }
 
@@ -28,86 +75,6 @@ initFirebase();
  */
 app.get("/health", (req, res) => {
   res.status(200).send("ok");
-});
-
-/**
- * ==========
- * PRIVACY POLICY PAGE
- * ==========
- */
-app.get("/privacy", (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Privacy Policy - AI Money Coach</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          line-height: 1.6;
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 40px 20px;
-          color: #222;
-          background: #fff;
-        }
-        h1, h2 {
-          color: #111;
-        }
-        a {
-          color: #0a66c2;
-        }
-      </style>
-    </head>
-    <body>
-      <h1>Privacy Policy</h1>
-      <p><strong>Last updated:</strong> April 2026</p>
-
-      <p>
-        AI Money Coach respects your privacy. This application provides AI-powered
-        informational content related to personal finance.
-      </p>
-
-      <h2>Information We Collect</h2>
-      <p>
-        The app may process text entered by users in order to generate AI responses.
-        The app does not require account creation and does not intentionally collect
-        personal identification data such as name, address, or phone number.
-      </p>
-
-      <h2>How We Use Information</h2>
-      <p>
-        User-provided text is used only to generate responses requested by the user
-        and to support the app’s functionality.
-      </p>
-
-      <h2>Third-Party Services</h2>
-      <p>
-        The app may rely on third-party services, including AI and hosting providers,
-        to process requests and deliver responses securely.
-      </p>
-
-      <h2>Data Sharing</h2>
-      <p>
-        We do not sell personal data and do not use user data for advertising purposes.
-      </p>
-
-      <h2>Children’s Privacy</h2>
-      <p>
-        AI Money Coach is not intended for children under the age of 13.
-      </p>
-
-      <h2>Contact</h2>
-      <p>
-        If you have questions about this Privacy Policy, you can contact us at:
-        <br />
-        <strong>aimoneycoach@gmail.com</strong>
-      </p>
-    </body>
-    </html>
-  `);
 });
 
 /**
@@ -163,6 +130,7 @@ app.post("/chat", async (req, res) => {
     }
 
     if (!db) {
+      // App still works without memory, but we tell you clearly
       console.warn("⚠️ Firestore not initialized. Replying without memory.");
     }
 
@@ -233,6 +201,7 @@ app.post("/chat", async (req, res) => {
         { role: "Assistant", text: reply, ts: Date.now() },
       ];
 
+      // (optional) keep doc size under control
       const maxMsgs = 60;
       const trimmed = updated.slice(-maxMsgs);
 
@@ -271,49 +240,4 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log("✅ Server running on port " + PORT);
 });
 ``
-require("dotenv").config();
-
-const express = require("express");
-const cors = require("cors");
-const axios = require("axios");
-const path = require("path");
-const admin = require("firebase-admin");
-
-const app = express();
-
-/**
- * ==========
- * BOOT LOGS + CRASH LOGS
- * ==========
- */
-console.log("✅ Booting app...");
-console.log("✅ Node version:", process.version);
-console.log("✅ OPENAI_API_KEY present:", !!process.env.OPENAI_API_KEY);
-console.log("✅ FIREBASE_SERVICE_ACCOUNT present:", !!process.env.FIREBASE_SERVICE_ACCOUNT);
-console.log("✅ PORT env:", process.env.PORT);
-
-process.on("uncaughtException", (err) => {
-  console.error("🔥 uncaughtException:", err);
-});
-
-process.on("unhandledRejection", (reason) => {
-  console.error("🔥 unhandledRejection:", reason);
-});
-
-/**
- * ==========
- * MIDDLEWARE
- * ==========
- */
-app.use(cors());
-app.use(express.json({ limit: "1mb" }));
-
-/**
- * ==========
- * FIREBASE INIT
- * ==========
- */
-let db = null;
-
-function initFirebase() {
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+// force redeploy for firebase env
